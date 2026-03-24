@@ -16,6 +16,8 @@
       --text-soft: #9a6a48;
       --bolt-dark: #6f543a;
       --bolt-light: #b9966d;
+      --success: #2f6b3b;
+      --warning: #8a5a3b;
     }
 
     * {
@@ -61,6 +63,10 @@
       opacity: 0.45;
       transform: scale(0.985);
       filter: saturate(0.7);
+    }
+
+    .museum-card.is-unlocked {
+      box-shadow: 0 18px 36px var(--shadow), 0 0 0 4px rgba(47, 107, 59, 0.12);
     }
 
     .museum-card::before,
@@ -127,6 +133,13 @@
       align-items: center;
       text-align: center;
       padding: 40px 26px 10px;
+      cursor: pointer;
+    }
+
+    .card-inner:focus-visible {
+      outline: 3px solid rgba(109, 63, 42, 0.35);
+      outline-offset: 8px;
+      border-radius: 16px;
     }
 
     .title {
@@ -168,16 +181,6 @@
       margin: 0 0 10px;
       line-height: 1;
       transition: transform 0.25s ease, opacity 0.25s ease;
-    }
-
-    .card-inner {
-      cursor: pointer;
-    }
-
-    .card-inner:focus-visible {
-      outline: 3px solid rgba(109, 63, 42, 0.35);
-      outline-offset: 8px;
-      border-radius: 16px;
     }
 
     .history-reveal {
@@ -347,6 +350,17 @@
       min-height: 1.5em;
       font-size: 0.95rem;
       color: var(--text-soft);
+      margin-top: 10px;
+    }
+
+    .status.good {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .status.warn {
+      color: var(--warning);
+      font-weight: 600;
     }
 
     @media (max-width: 860px) {
@@ -422,8 +436,7 @@
         <p class="eyebrow">Augmented History</p>
         <h2>Location-Aware Web App Card</h2>
         <p>
-          This HTML layout matches the museum plaque style and stores the anchor point
-          for your AR experience directly in the markup.
+          This version is more forgiving for GPS drift and works better for real-world demos.
         </p>
       </section>
 
@@ -456,11 +469,24 @@
           <button class="button secondary" id="openMapBtn">Open Map</button>
           <button class="button secondary" id="copyCoordsBtn">Copy Coordinates</button>
         </div>
+
         <div class="proximity-box">
           <p class="meta-label">Distance To Site</p>
           <p class="distance-readout" id="distanceReadout">Not checked yet</p>
           <p class="hint" id="proximityHint">Tap Start Experience to use your phone location.</p>
         </div>
+
+        <div class="meta-grid" style="margin-top: 14px;">
+          <div class="meta-item">
+            <span class="meta-label">Unlock Radius</span>
+            <span class="meta-value" id="radiusReadout">1200 ft</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">GPS Accuracy</span>
+            <span class="meta-value" id="accuracyReadout">Unknown</span>
+          </div>
+        </div>
+
         <p class="status" id="statusMessage"></p>
       </section>
     </aside>
@@ -471,17 +497,29 @@
       const card = document.getElementById("historyCard");
       const cardInner = document.getElementById("cardInner");
       const historyReveal = document.getElementById("historyReveal");
+
       const lat = parseFloat(card.dataset.lat);
       const lng = parseFloat(card.dataset.lng);
       const siteName = card.dataset.siteName;
       const siteYear = card.dataset.year;
-      const unlockDistanceFeet = 250;
 
-      document.getElementById("latitude").textContent = lat.toFixed(4);
-      document.getElementById("longitude").textContent = lng.toFixed(4);
-      document.getElementById("siteName").textContent = siteName;
-      document.getElementById("siteYear").textContent = siteYear;
+      // Main fix:
+      // Old code used 250 feet, which is too strict for GPS.
+      // 1200 feet is much more forgiving for a midterm demo.
+      const unlockDistanceFeet = 1200;
 
+      // If GPS accuracy is bad, allow a little extra wiggle room.
+      const maxAccuracyBonusFeet = 600;
+
+      let watchId = null;
+      let lastDistanceFeet = null;
+
+      const latitudeEl = document.getElementById("latitude");
+      const longitudeEl = document.getElementById("longitude");
+      const siteNameEl = document.getElementById("siteName");
+      const siteYearEl = document.getElementById("siteYear");
+      const radiusReadout = document.getElementById("radiusReadout");
+      const accuracyReadout = document.getElementById("accuracyReadout");
       const statusMessage = document.getElementById("statusMessage");
       const distanceReadout = document.getElementById("distanceReadout");
       const proximityHint = document.getElementById("proximityHint");
@@ -489,27 +527,58 @@
       const openMapBtn = document.getElementById("openMapBtn");
       const copyCoordsBtn = document.getElementById("copyCoordsBtn");
 
+      latitudeEl.textContent = lat.toFixed(4);
+      longitudeEl.textContent = lng.toFixed(4);
+      siteNameEl.textContent = siteName;
+      siteYearEl.textContent = siteYear;
+      radiusReadout.textContent = unlockDistanceFeet + " ft";
+
+      function setStatus(message, type) {
+        statusMessage.textContent = message;
+        statusMessage.className = "status";
+        if (type) {
+          statusMessage.classList.add(type);
+        }
+      }
+
+      function feetToMeters(feet) {
+        return feet / 3.28084;
+      }
+
+      function metersToFeet(meters) {
+        return meters * 3.28084;
+      }
+
       function haversineDistanceFeet(lat1, lon1, lat2, lon2) {
-        const toRad = function (deg) { return deg * (Math.PI / 180); };
+        const toRad = function (deg) {
+          return deg * (Math.PI / 180);
+        };
+
         const earthRadiusMeters = 6371000;
         const dLat = toRad(lat2 - lat1);
         const dLon = toRad(lon2 - lon1);
+
         const a =
           Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+          Math.cos(toRad(lat1)) *
+          Math.cos(toRad(lat2)) *
           Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         const meters = earthRadiusMeters * c;
-        return meters * 3.28084;
+
+        return metersToFeet(meters);
       }
 
       function unlockCard() {
         card.classList.remove("is-locked");
+        card.classList.add("is-unlocked");
         proximityHint.textContent = "You are close enough to interact with the card.";
       }
 
       function lockCard() {
         card.classList.add("is-locked");
+        card.classList.remove("is-unlocked");
         historyReveal.setAttribute("hidden", "hidden");
         card.classList.remove("is-expanded");
         cardInner.setAttribute("aria-expanded", "false");
@@ -517,7 +586,7 @@
 
       function toggleHistoryReveal() {
         if (card.classList.contains("is-locked")) {
-          statusMessage.textContent = "Move closer to the site or press Start Experience to update your location.";
+          setStatus("Move closer to the site or press Start Experience to update your location.", "warn");
           return;
         }
 
@@ -527,51 +596,116 @@
           historyReveal.removeAttribute("hidden");
           card.classList.add("is-expanded");
           cardInner.setAttribute("aria-expanded", "true");
-          statusMessage.textContent = "History opened on card tap.";
+          setStatus("History opened on card tap.", "good");
         } else {
           historyReveal.setAttribute("hidden", "hidden");
           card.classList.remove("is-expanded");
           cardInner.setAttribute("aria-expanded", "false");
-          statusMessage.textContent = "History closed.";
+          setStatus("History closed.");
         }
       }
 
-      function updateDistance(userLat, userLng) {
+      function updateDistance(userLat, userLng, accuracyMeters) {
         const distanceFeet = haversineDistanceFeet(userLat, userLng, lat, lng);
+        lastDistanceFeet = distanceFeet;
+
         const roundedFeet = Math.round(distanceFeet);
         distanceReadout.textContent = roundedFeet + " ft away";
 
-        if (distanceFeet <= unlockDistanceFeet) {
+        if (typeof accuracyMeters === "number" && !isNaN(accuracyMeters)) {
+          const accuracyFeet = Math.round(metersToFeet(accuracyMeters));
+          accuracyReadout.textContent = accuracyFeet + " ft";
+        } else {
+          accuracyReadout.textContent = "Unknown";
+        }
+
+        // Add a bonus tolerance based on GPS accuracy,
+        // but cap it so the range does not get too huge.
+        let effectiveRadiusFeet = unlockDistanceFeet;
+
+        if (typeof accuracyMeters === "number" && !isNaN(accuracyMeters)) {
+          const accuracyFeet = metersToFeet(accuracyMeters);
+          effectiveRadiusFeet += Math.min(accuracyFeet, maxAccuracyBonusFeet);
+        }
+
+        console.log("User latitude:", userLat);
+        console.log("User longitude:", userLng);
+        console.log("Distance to target (ft):", distanceFeet);
+        console.log("GPS accuracy (m):", accuracyMeters);
+        console.log("Effective unlock radius (ft):", effectiveRadiusFeet);
+
+        if (distanceFeet <= effectiveRadiusFeet) {
           unlockCard();
-          statusMessage.textContent = "Experience unlocked near " + siteName + ".";
+          setStatus("Experience unlocked near " + siteName + ".", "good");
         } else {
           lockCard();
-          proximityHint.textContent = "Get within about " + unlockDistanceFeet + " feet to unlock the history card.";
-          statusMessage.textContent = "You are not close enough yet.";
+          proximityHint.textContent =
+            "Get within about " + unlockDistanceFeet +
+            " feet to unlock the history card. GPS can drift, so this app now allows extra wiggle room.";
+          setStatus("You are not close enough yet.", "warn");
         }
+      }
+
+      function handleLocationSuccess(position) {
+        updateDistance(
+          position.coords.latitude,
+          position.coords.longitude,
+          position.coords.accuracy
+        );
+      }
+
+      function handleLocationError(error) {
+        let message = "Location access was blocked or unavailable.";
+
+        if (error && typeof error.code !== "undefined") {
+          if (error.code === 1) {
+            message = "Location permission was denied. Allow location access in your browser and phone settings.";
+          } else if (error.code === 2) {
+            message = "Location information is unavailable right now. Try stepping outside or enabling better GPS/Wi-Fi.";
+          } else if (error.code === 3) {
+            message = "Location request timed out. Try again and wait a little longer for GPS.";
+          }
+        }
+
+        setStatus(message, "warn");
       }
 
       function startExperience() {
         if (!navigator.geolocation) {
-          statusMessage.textContent = "Geolocation is not supported on this device.";
+          setStatus("Geolocation is not supported on this device.", "warn");
           return;
         }
 
-        statusMessage.textContent = "Checking your location...";
+        setStatus("Checking your location...", "warn");
+        proximityHint.textContent = "Trying to get your most accurate current location.";
 
+        // One immediate check
         navigator.geolocation.getCurrentPosition(
-          function (position) {
-            updateDistance(position.coords.latitude, position.coords.longitude);
-          },
-          function () {
-            statusMessage.textContent = "Location access was blocked or unavailable. Allow location on your phone to test the real experience.";
-          },
+          handleLocationSuccess,
+          handleLocationError,
           {
             enableHighAccuracy: true,
-            timeout: 10000,
+            timeout: 15000,
             maximumAge: 0
           }
         );
+
+        // Keep listening in case the first reading is bad and improves after a few seconds
+        if (watchId !== null) {
+          navigator.geolocation.clearWatch(watchId);
+        }
+
+        watchId = navigator.geolocation.watchPosition(
+          handleLocationSuccess,
+          handleLocationError,
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 3000
+          }
+        );
+
+        setStatus("Live location tracking started. Stand still for a few seconds if the distance looks wrong.", "warn");
       }
 
       cardInner.addEventListener("click", function (event) {
@@ -591,24 +725,28 @@
       openMapBtn.addEventListener("click", function () {
         const mapUrl = "https://maps.google.com/?q=" + lat + "," + lng;
         window.open(mapUrl, "_blank", "noopener,noreferrer");
-        statusMessage.textContent = "Opened the site marker in a new map tab.";
+        setStatus("Opened the site marker in a new map tab.");
       });
 
       copyCoordsBtn.addEventListener("click", function () {
-        const coordText = `N ${lat}, W ${Math.abs(lng)}`;
+        const coordText = lat + ", " + lng;
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(coordText)
             .then(function () {
-              statusMessage.textContent = "Coordinates copied to clipboard.";
+              setStatus("Coordinates copied to clipboard.", "good");
             })
             .catch(function () {
-              statusMessage.textContent = "Clipboard access failed. Copy this manually: " + coordText;
+              setStatus("Clipboard access failed. Copy this manually: " + coordText, "warn");
             });
         } else {
-          statusMessage.textContent = "Clipboard not supported. Copy this manually: " + coordText;
+          setStatus("Clipboard not supported. Copy this manually: " + coordText, "warn");
         }
       });
+
+      // Start locked until location check runs
+      lockCard();
+      proximityHint.textContent = "Tap Start Experience to use your phone location.";
     })();
   </script>
 </body>
