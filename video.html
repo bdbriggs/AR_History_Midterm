@@ -36,6 +36,7 @@
       font-size: 1.5rem;
       letter-spacing: 0.1em;
       opacity: 0.9;
+      z-index: 2;
     }
 
     .button {
@@ -51,6 +52,7 @@
       font-weight: bold;
       cursor: pointer;
       display: none;
+      z-index: 2;
     }
   </style>
 </head>
@@ -65,7 +67,7 @@
 
   <div class="title">PastPort • Experiencing the Courthouse Through Time</div>
 
-  <button class="button" id="continueBtn" onclick="goToIndex()">Enter Exhibit</button>
+  <button class="button" id="continueBtn" onclick="goToExhibit()">Enter Exhibit</button>
 
   <script>
     const video = document.getElementById("videoPlayer");
@@ -85,13 +87,13 @@
       }
     });
 
-function goToExhibit() {
-  window.location.href = "exhibit.html";
-}
-    // Optional fail-safe: press D to skip
+    function goToExhibit() {
+      window.location.href = "exhibit.html";
+    }
+
     document.addEventListener("keydown", function (event) {
       if (event.key === "d" || event.key === "D") {
-        goToIndex();
+        goToExhibit();
       }
     });
   </script>
