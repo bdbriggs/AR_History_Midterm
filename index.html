@@ -433,321 +433,88 @@
 
     <aside class="info-panel">
       <section class="panel">
-        <p class="eyebrow">Augmented History</p>
-        <h2>Location-Aware Web App Card</h2>
+        <p class="eyebrow">PastPort Experience</p>
+        <h2>Interactive Historic Site Interpretation</h2>
         <p>
-          Learn more about beautiful historical sites around you with interactive cards unlock as you explore. This demo uses your phone's GPS location to reveal hidden stories about the Harrison County Historical Museum in Marshall, Texas when you get close enough. Try it out and see how history can come alive on your device!
+          PastPort transforms the Harrison County Historical Museum into an interactive portal to local history. When the courthouse is recognized, a museum-style card appears in context, inviting the visitor to explore. From there, the experience expands into historical media and interpretive information, blending archival storytelling with the physical site itself.. This demo uses your phone's GPS location to reveal hidden stories about the Harrison County Historical Museum in Marshall, Texas when you get close enough. Try it out and see how history can come alive on your device!
         </p>
       </section>
 
       <section class="panel">
-        <p class="eyebrow">Attached Coordinates</p>
+        <p class="eyebrow">About PastPort</p>
         <div class="meta-grid">
           <div class="meta-item">
-            <span class="meta-label">Latitude</span>
-            <span class="meta-value" id="latitude">32.5456</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Longitude</span>
-            <span class="meta-value" id="longitude">-94.3562</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Marker Name</span>
-            <span class="meta-value" id="siteName">Harrison County Historical Museum</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Established</span>
-            <span class="meta-value" id="siteYear">1901</span>
+<div class="meta-item">
+  <span class="meta-label">Site Name</span>
+  <span class="meta-value" id="siteName">Harrison County Historical Museum</span>
+</div>
+
+<div class="meta-item">
+  <span class="meta-label">Built</span>
+  <span class="meta-value" id="siteYear">1901</span>
+</div>
+
+<div class="meta-item">
+  <span class="meta-label">Architect</span>
+  <span class="meta-value">J. Riely Gordon</span>
+</div>
+
+<div class="meta-item">
+  <span class="meta-label">Style</span>
+  <span class="meta-value">Beaux Arts / Neo-Classical</span>
+</div>
           </div>
         </div>
       </section>
 
-      <section class="panel">
-        <p class="eyebrow">Interaction</p>
-        <div class="cta-row">
-          <button class="button primary" id="startExperienceBtn">Start Experience</button>
-          <button class="button secondary" id="openMapBtn">Open Map</button>
-          <button class="button secondary" id="copyCoordsBtn">Copy Coordinates</button>
-        </div>
+      
 
-        <div class="proximity-box">
-          <p class="meta-label">Distance To Site</p>
-          <p class="distance-readout" id="distanceReadout">Not checked yet</p>
-          <p class="hint" id="proximityHint">Tap Start Experience to use your phone location.</p>
-        </div>
+  <<script>
+  (function () {
+    const card = document.getElementById("historyCard");
+    const cardInner = document.getElementById("cardInner");
+    const historyReveal = document.getElementById("historyReveal");
+    const siteNameEl = document.getElementById("siteName");
+    const siteYearEl = document.getElementById("siteYear");
 
-        <div class="meta-grid" style="margin-top: 14px;">
-          <div class="meta-item">
-            <span class="meta-label">Unlock Radius</span>
-            <span class="meta-value" id="radiusReadout">1200 ft</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">GPS Accuracy</span>
-            <span class="meta-value" id="accuracyReadout">Unknown</span>
-          </div>
-        </div>
+    const siteName = card.dataset.siteName;
+    const siteYear = card.dataset.year;
 
-        <p class="status" id="statusMessage"></p>
-      </section>
-    </aside>
-  </main>
-
-  <script>
-    (function () {
-      const card = document.getElementById("historyCard");
-      const cardInner = document.getElementById("cardInner");
-      const historyReveal = document.getElementById("historyReveal");
-
-      const lat = parseFloat(card.dataset.lat);
-      const lng = parseFloat(card.dataset.lng);
-      const siteName = card.dataset.siteName;
-      const siteYear = card.dataset.year;
-
-      // Main fix:
-      // Old code used 250 feet, which is too strict for GPS.
-      // 1200 feet is much more forgiving for a midterm demo.
-      const unlockDistanceFeet = 10000;
-
-      // If GPS accuracy is bad, allow a little extra wiggle room.
-      const maxAccuracyBonusFeet = 600;
-
-      let watchId = null;
-      let lastDistanceFeet = null;
-
-      const latitudeEl = document.getElementById("latitude");
-      const longitudeEl = document.getElementById("longitude");
-      const siteNameEl = document.getElementById("siteName");
-      const siteYearEl = document.getElementById("siteYear");
-      const radiusReadout = document.getElementById("radiusReadout");
-      const accuracyReadout = document.getElementById("accuracyReadout");
-      const statusMessage = document.getElementById("statusMessage");
-      const distanceReadout = document.getElementById("distanceReadout");
-      const proximityHint = document.getElementById("proximityHint");
-      const startExperienceBtn = document.getElementById("startExperienceBtn");
-      const openMapBtn = document.getElementById("openMapBtn");
-      const copyCoordsBtn = document.getElementById("copyCoordsBtn");
-
-      latitudeEl.textContent = lat.toFixed(4);
-      longitudeEl.textContent = lng.toFixed(4);
+    if (siteNameEl) {
       siteNameEl.textContent = siteName;
+    }
+
+    if (siteYearEl) {
       siteYearEl.textContent = siteYear;
-      radiusReadout.textContent = unlockDistanceFeet + " ft";
+    }
 
-      function setStatus(message, type) {
-        statusMessage.textContent = message;
-        statusMessage.className = "status";
-        if (type) {
-          statusMessage.classList.add(type);
-        }
-      }
+    function toggleHistoryReveal() {
+      const isHidden = historyReveal.hasAttribute("hidden");
 
-      function feetToMeters(feet) {
-        return feet / 3.28084;
-      }
-
-      function metersToFeet(meters) {
-        return meters * 3.28084;
-      }
-
-      function haversineDistanceFeet(lat1, lon1, lat2, lon2) {
-        const toRad = function (deg) {
-          return deg * (Math.PI / 180);
-        };
-
-        const earthRadiusMeters = 6371000;
-        const dLat = toRad(lat2 - lat1);
-        const dLon = toRad(lon2 - lon1);
-
-        const a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(toRad(lat1)) *
-          Math.cos(toRad(lat2)) *
-          Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const meters = earthRadiusMeters * c;
-
-        return metersToFeet(meters);
-      }
-
-      function unlockCard() {
+      if (isHidden) {
+        historyReveal.removeAttribute("hidden");
         card.classList.remove("is-locked");
-        card.classList.add("is-unlocked");
-        proximityHint.textContent = "You are close enough to interact with the card.";
-      }
-
-      function lockCard() {
-        card.classList.add("is-locked");
-        card.classList.remove("is-unlocked");
+        card.classList.add("is-unlocked", "is-expanded");
+        cardInner.setAttribute("aria-expanded", "true");
+      } else {
         historyReveal.setAttribute("hidden", "hidden");
         card.classList.remove("is-expanded");
         cardInner.setAttribute("aria-expanded", "false");
       }
+    }
 
-      function toggleHistoryReveal() {
-        if (card.classList.contains("is-locked")) {
-          setStatus("Move closer to the site or press Start Experience to update your location.", "warn");
-          return;
-        }
+    card.classList.remove("is-locked");
+    card.classList.add("is-unlocked");
 
-        const isHidden = historyReveal.hasAttribute("hidden");
+    cardInner.addEventListener("click", function () {
+      toggleHistoryReveal();
+    });
 
-        if (isHidden) {
-          historyReveal.removeAttribute("hidden");
-          card.classList.add("is-expanded");
-          cardInner.setAttribute("aria-expanded", "true");
-          setStatus("History opened on card tap.", "good");
-        } else {
-          historyReveal.setAttribute("hidden", "hidden");
-          card.classList.remove("is-expanded");
-          cardInner.setAttribute("aria-expanded", "false");
-          setStatus("History closed.");
-        }
-      }
-
-      function updateDistance(userLat, userLng, accuracyMeters) {
-        const distanceFeet = haversineDistanceFeet(userLat, userLng, lat, lng);
-        lastDistanceFeet = distanceFeet;
-
-        const roundedFeet = Math.round(distanceFeet);
-        distanceReadout.textContent = roundedFeet + " ft away";
-
-        if (typeof accuracyMeters === "number" && !isNaN(accuracyMeters)) {
-          const accuracyFeet = Math.round(metersToFeet(accuracyMeters));
-          accuracyReadout.textContent = accuracyFeet + " ft";
-        } else {
-          accuracyReadout.textContent = "Unknown";
-        }
-
-        // Add a bonus tolerance based on GPS accuracy,
-        // but cap it so the range does not get too huge.
-        let effectiveRadiusFeet = unlockDistanceFeet;
-
-        if (typeof accuracyMeters === "number" && !isNaN(accuracyMeters)) {
-          const accuracyFeet = metersToFeet(accuracyMeters);
-          effectiveRadiusFeet += Math.min(accuracyFeet, maxAccuracyBonusFeet);
-        }
-
-        console.log("User latitude:", userLat);
-        console.log("User longitude:", userLng);
-        console.log("Distance to target (ft):", distanceFeet);
-        console.log("GPS accuracy (m):", accuracyMeters);
-        console.log("Effective unlock radius (ft):", effectiveRadiusFeet);
-
-        if (distanceFeet <= effectiveRadiusFeet) {
-          unlockCard();
-          setStatus("Experience unlocked near " + siteName + ".", "good");
-        } else {
-          lockCard();
-          proximityHint.textContent =
-            "Get within about " + unlockDistanceFeet +
-            " feet to unlock the history card. GPS can drift, so this app now allows extra wiggle room.";
-          setStatus("You are not close enough yet.", "warn");
-        }
-      }
-
-      function handleLocationSuccess(position) {
-        updateDistance(
-          position.coords.latitude,
-          position.coords.longitude,
-          position.coords.accuracy
-        );
-      }
-
-      function handleLocationError(error) {
-        let message = "Location access was blocked or unavailable.";
-
-        if (error && typeof error.code !== "undefined") {
-          if (error.code === 1) {
-            message = "Location permission was denied. Allow location access in your browser and phone settings.";
-          } else if (error.code === 2) {
-            message = "Location information is unavailable right now. Try stepping outside or enabling better GPS/Wi-Fi.";
-          } else if (error.code === 3) {
-            message = "Location request timed out. Try again and wait a little longer for GPS.";
-          }
-        }
-
-        setStatus(message, "warn");
-      }
-
-      function startExperience() {
-        if (!navigator.geolocation) {
-          setStatus("Geolocation is not supported on this device.", "warn");
-          return;
-        }
-
-        setStatus("Checking your location...", "warn");
-        proximityHint.textContent = "Trying to get your most accurate current location.";
-
-        // One immediate check
-        navigator.geolocation.getCurrentPosition(
-          handleLocationSuccess,
-          handleLocationError,
-          {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0
-          }
-        );
-
-        // Keep listening in case the first reading is bad and improves after a few seconds
-        if (watchId !== null) {
-          navigator.geolocation.clearWatch(watchId);
-        }
-
-        watchId = navigator.geolocation.watchPosition(
-          handleLocationSuccess,
-          handleLocationError,
-          {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 3000
-          }
-        );
-
-        setStatus("Live location tracking started. Stand still for a few seconds if the distance looks wrong.", "warn");
-      }
-
-      cardInner.addEventListener("click", function (event) {
-        if (event.target.closest("button")) return;
+    cardInner.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
         toggleHistoryReveal();
-      });
-
-      cardInner.addEventListener("keydown", function (event) {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          toggleHistoryReveal();
-        }
-      });
-
-      startExperienceBtn.addEventListener("click", startExperience);
-
-      openMapBtn.addEventListener("click", function () {
-        const mapUrl = "https://maps.google.com/?q=" + lat + "," + lng;
-        window.open(mapUrl, "_blank", "noopener,noreferrer");
-        setStatus("Opened the site marker in a new map tab.");
-      });
-
-      copyCoordsBtn.addEventListener("click", function () {
-        const coordText = lat + ", " + lng;
-
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(coordText)
-            .then(function () {
-              setStatus("Coordinates copied to clipboard.", "good");
-            })
-            .catch(function () {
-              setStatus("Clipboard access failed. Copy this manually: " + coordText, "warn");
-            });
-        } else {
-          setStatus("Clipboard not supported. Copy this manually: " + coordText, "warn");
-        }
-      });
-
-      // Start locked until location check runs
-      lockCard();
-      proximityHint.textContent = "Tap Start Experience to use your phone location.";
-    })();
-  </script>
-</body>
-</html>
+      }
+    });
+  })();
+</script>

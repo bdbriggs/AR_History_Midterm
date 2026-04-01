@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PastPort AR View</title>
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: Georgia, serif;
+      background: #111;
+    }
+
+    #cameraFeed {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.12);
+      pointer-events: none;
+    }
+
+    .ui-label {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(0,0,0,0.55);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      z-index: 3;
+    }
+
+    .status {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      max-width: 220px;
+      background: rgba(0,0,0,0.55);
+      color: white;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      z-index: 3;
+    }
+
+    .ar-card {
+      position: absolute;
+      top: 22%;
+      right: 10%;
+      width: 260px;
+      padding: 18px;
+      border-radius: 12px;
+      background: rgba(246, 234, 215, 0.96);
+      border: 2px solid #8a5a3b;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      animation: floatIn 0.6s ease;
+      z-index: 2;
+    }
+
+    .ar-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+    }
+
+    .title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #6d3f2a;
+      margin-bottom: 8px;
+    }
+
+    .year {
+      font-size: 1.8rem;
+      color: #6d3f2a;
+      font-weight: bold;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #9a6a48;
+    }
+
+    .fallback-image {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+      z-index: 0;
+    }
+
+    .demo-button {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      font-family: inherit;
+      cursor: pointer;
+      font-size: 0.9rem;
+      z-index: 3;
+    }
+
+    @keyframes floatIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <video id="cameraFeed" autoplay playsinline muted></video>
+  <img id="fallbackImage" class="fallback-image" src="images/courthouse.jpg" alt="Courthouse fallback background" />
+
+  <div class="overlay"></div>
+
+  <div class="ui-label">PASTPORT • AR VIEW</div>
+  <div class="status" id="statusBox">Opening camera...</div>
+
+  <div class="ar-card" onclick="openExperience()">
+    <div class="title">Harrison County Historical Museum</div>
+    <div class="year">1901</div>
+    <div class="hint">Tap to explore</div>
+  </div>
+
+  <button class="demo-button" onclick="openExperience()">Demo Mode</button>
+
+  <script>
+    const cameraFeed = document.getElementById("cameraFeed");
+    const fallbackImage = document.getElementById("fallbackImage");
+    const statusBox = document.getElementById("statusBox");
+
+    function openExperience() {
+      window.location.href = "video.html";
+    }
+
+    async function startCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        statusBox.textContent = "Camera not supported. Using fallback image.";
+        fallbackImage.style.display = "block";
+        cameraFeed.style.display = "none";
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" }
+          },
+          audio: false
+        });
+
+        cameraFeed.srcObject = stream;
+        statusBox.textContent = "Camera live. Point toward the courthouse.";
+      } catch (error) {
+        statusBox.textContent = "Camera unavailable. Using fallback image.";
+        fallbackImage.style.display = "block";
+        cameraFeed.style.display = "none";
+      }
+    }
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "d" || event.key === "D") {
+        openExperience();
+      }
+    });
+
+    startCamera();
+  </script>
+</body>
+</html>

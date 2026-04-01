@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PastPort Experience</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+      font-family: Georgia, serif;
+      color: white;
+    }
+
+    video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .title {
+      position: absolute;
+      bottom: 80px;
+      width: 100%;
+      text-align: center;
+      font-size: 1.5rem;
+      letter-spacing: 0.1em;
+      opacity: 0.9;
+    }
+
+    .button {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 20px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(255,255,255,0.9);
+      color: #333;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <video id="videoPlayer" autoplay muted playsinline>
+    <source src="media/courthouse.mp4" type="video/mp4">
+  </video>
+
+  <div class="overlay"></div>
+
+  <div class="title">PastPort • Experiencing the Courthouse Through Time</div>
+
+  <button class="button" id="continueBtn" onclick="goToIndex()">Enter Exhibit</button>
+
+  <script>
+    const video = document.getElementById("videoPlayer");
+    const button = document.getElementById("continueBtn");
+
+    let playCount = 0;
+    const maxLoops = 10;
+
+    video.addEventListener("ended", function () {
+      playCount++;
+
+      if (playCount < maxLoops) {
+        video.currentTime = 0;
+        video.play();
+      } else {
+        button.style.display = "block";
+      }
+    });
+
+    function goToIndex() {
+      window.location.href = "index.html";
+    }
+
+    // Optional fail-safe: press D to skip
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "d" || event.key === "D") {
+        goToIndex();
+      }
+    });
+  </script>
+
+</body>
+</html>
