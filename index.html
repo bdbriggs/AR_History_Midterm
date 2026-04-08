@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PastPort AR View</title>
+  <title>PastPort Recognition View</title>
 
   <style>
     body {
@@ -12,6 +12,7 @@
       overflow: hidden;
       font-family: Georgia, serif;
       background: #111;
+      color: white;
     }
 
     #cameraFeed {
@@ -23,10 +24,19 @@
       background: #000;
     }
 
+    #fallbackImage {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
     .overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.12);
+      background: rgba(0, 0, 0, 0.15);
       pointer-events: none;
     }
 
@@ -40,50 +50,213 @@
       border-radius: 6px;
       font-size: 0.8rem;
       letter-spacing: 0.1em;
-      z-index: 3;
+      z-index: 5;
     }
 
-    .status {
+    .status-box {
       position: absolute;
       top: 16px;
       right: 16px;
-      max-width: 220px;
-      background: rgba(0,0,0,0.55);
+      max-width: 260px;
+      background: rgba(0,0,0,0.58);
       color: white;
-      padding: 8px 10px;
-      border-radius: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      z-index: 5;
+    }
+
+    .status-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      opacity: 0.9;
+    }
+
+    .scan-indicator {
+      display: inline-block;
+      margin-top: 6px;
+      opacity: 0.8;
       font-size: 0.85rem;
-      line-height: 1.4;
+    }
+
+    .scan-indicator::after {
+      content: "";
+      display: inline-block;
+      width: 1.2em;
+      animation: dots 1.2s steps(3, end) infinite;
+      overflow: hidden;
+      vertical-align: bottom;
+    }
+
+    @keyframes dots {
+      0% { content: ""; }
+      33% { content: "."; }
+      66% { content: ".."; }
+      100% { content: "..."; }
+    }
+
+    .target-frame {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: min(62vw, 320px);
+      height: min(45vw, 230px);
+      transform: translate(-50%, -50%);
+      border: 2px solid rgba(255,255,255,0.7);
+      border-radius: 18px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.12);
+      z-index: 2;
+      pointer-events: none;
+    }
+    .target-frame {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(62vw, 320px);
+  height: min(45vw, 230px);
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255,255,255,0.7);
+  border-radius: 18px;
+  box-shadow: 
+    0 0 0 9999px rgba(0,0,0,0.12),
+    0 0 18px rgba(255,255,255,0.12);
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  animation: framePulse 2.2s ease-in-out infinite;
+}
+
+.target-frame::before,
+.target-frame::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px dashed rgba(255,255,255,0.45);
+  border-radius: 12px;
+}
+
+.scan-line {
+  position: absolute;
+  left: 8%;
+  width: 84%;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.15),
+    rgba(255,255,255,0.8),
+    rgba(255,255,255,0.15),
+    transparent
+  );
+  box-shadow: 0 0 12px rgba(255,255,255,0.45);
+  animation: scanMove 2.4s linear infinite;
+}
+
+@keyframes scanMove {
+  0% {
+    top: 8%;
+    opacity: 0.3;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  85% {
+    opacity: 0.95;
+  }
+  100% {
+    top: 88%;
+    opacity: 0.3;
+  }
+}
+
+@keyframes framePulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 9999px rgba(0,0,0,0.12),
+      0 0 18px rgba(255,255,255,0.10);
+  }
+  50% {
+    box-shadow:
+      0 0 0 9999px rgba(0,0,0,0.12),
+      0 0 28px rgba(255,255,255,0.22);
+  }
+}
+
+    .target-frame::before,
+    .target-frame::after {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border: 1px dashed rgba(255,255,255,0.45);
+      border-radius: 12px;
+    }
+
+    .hint-text {
+      position: absolute;
+      left: 50%;
+      bottom: calc(50% - 150px);
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.45);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
       z-index: 3;
+      white-space: nowrap;
     }
 
     .ar-card {
-      position: absolute;
-      top: 22%;
-      right: 10%;
-      width: 260px;
-      padding: 18px;
-      border-radius: 12px;
-      background: rgba(246, 234, 215, 0.96);
-      border: 2px solid #8a5a3b;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.28);
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-      animation: floatIn 0.6s ease;
-      z-index: 2;
+  position: absolute;
+  top: 22%;
+  right: 10%;
+  width: 280px;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(246, 234, 215, 0.97);
+  border: 2px solid #8a5a3b;
+
+  /* 🔥 DEPTH + XR FEEL */
+  box-shadow: 
+    0 20px 50px rgba(0,0,0,0.35),
+    0 0 20px rgba(138, 90, 59, 0.2);
+
+  backdrop-filter: blur(6px);
+
+  text-align: center;
+  cursor: pointer;
+
+  transition: 
+    transform 0.25s ease, 
+    box-shadow 0.25s ease, 
+    opacity 0.3s ease;
+
+  z-index: 4;
+  opacity: 0;
+  pointer-events: none;
+
+  transform: translateY(18px) scale(0.96);
+}
+
+    .ar-card.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
+      animation: floatIn 0.5s ease;
     }
 
     .ar-card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 22px 44px rgba(0,0,0,0.35);
     }
 
     .title {
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       font-weight: bold;
       color: #6d3f2a;
       margin-bottom: 8px;
+      line-height: 1.3;
     }
 
     .year {
@@ -98,65 +271,125 @@
       color: #9a6a48;
     }
 
-    .fallback-image {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: none;
-      z-index: 0;
-    }
-
-    .demo-button {
+    .demo-controls {
       position: absolute;
       bottom: 16px;
       right: 16px;
+      display: flex;
+      gap: 10px;
+      z-index: 5;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .demo-button {
       padding: 10px 14px;
       border: none;
       border-radius: 999px;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.65);
       color: white;
       font-family: inherit;
       cursor: pointer;
       font-size: 0.9rem;
-      z-index: 3;
+    }
+
+    .demo-button:hover {
+      background: rgba(0,0,0,0.82);
     }
 
     @keyframes floatIn {
       from {
         opacity: 0;
-        transform: translateY(20px) scale(0.95);
+        transform: translateY(20px) scale(0.94);
       }
       to {
         opacity: 1;
         transform: translateY(0) scale(1);
       }
     }
+
+    @media (max-width: 700px) {
+      .ar-card {
+        top: auto;
+        bottom: 92px;
+        right: 50%;
+        transform: translateX(50%) translateY(18px) scale(0.96);
+        width: min(84vw, 300px);
+      }
+
+      .ar-card.is-visible {
+        transform: translateX(50%) translateY(0) scale(1);
+      }
+
+      .ar-card:hover {
+        transform: translateX(50%) translateY(-2px) scale(1.02);
+      }
+
+      .hint-text {
+        bottom: calc(50% - 135px);
+      }
+    }
   </style>
 </head>
-
 <body>
   <video id="cameraFeed" autoplay playsinline muted></video>
-  <img id="fallbackImage" class="fallback-image" src="images/courthouse.jpg" alt="Courthouse fallback background" />
+  <img id="fallbackImage" src="images/courthouse.jpg" alt="Courthouse fallback background" />
 
   <div class="overlay"></div>
 
-  <div class="ui-label">PASTPORT • AR VIEW</div>
-  <div class="status" id="statusBox">Opening camera...</div>
+  <div class="ui-label">PASTPORT • RECOGNITION VIEW</div>
 
-  <div class="ar-card" onclick="openExperience()">
+  <div class="status-box" id="statusBox">
+    <div class="status-title">System Status</div>
+    <div id="statusText">Opening camera and scanning for courthouse</div>
+    <div class="scan-indicator" id="scanIndicator">Scanning</div>
+  </div>
+
+ <div class="target-frame">
+  <div class="scan-line"></div>
+</div>
+  <div class="hint-text" id="hintText">Center the courthouse in frame</div>
+
+  <div class="ar-card" id="arCard" onclick="openExperience()">
     <div class="title">Harrison County Historical Museum</div>
     <div class="year">1901</div>
     <div class="hint">Tap to explore</div>
   </div>
 
-  <button class="demo-button" onclick="openExperience()">Demo Mode</button>
+  <div class="demo-controls">
+<button class="demo-button" onclick="startWithoutRecognition()">
+  Start Without Recognition
+</button>    <button class="demo-button" onclick="openExperience()">Skip to Video</button>
+  </div>
 
   <script>
     const cameraFeed = document.getElementById("cameraFeed");
     const fallbackImage = document.getElementById("fallbackImage");
-    const statusBox = document.getElementById("statusBox");
+    const statusText = document.getElementById("statusText");
+    const scanIndicator = document.getElementById("scanIndicator");
+    const hintText = document.getElementById("hintText");
+    const arCard = document.getElementById("arCard");
+
+    let recognized = false;
+
+    function showRecognizedState() {
+      if (recognized) return;
+      recognized = true;
+
+      statusText.textContent = "Courthouse recognized. Digital overlay anchored.";
+      scanIndicator.style.display = "none";
+      hintText.textContent = "Landmark detected";
+      arCard.classList.add("is-visible");
+    }
+
+  function startWithoutRecognition() {
+  statusText.textContent = "Recognition skipped. Manual entry enabled.";
+  scanIndicator.style.display = "none";
+  hintText.textContent = "Manual mode";
+
+  showRecognizedState();
+}
+    
 
     function openExperience() {
       window.location.href = "video.html";
@@ -164,7 +397,8 @@
 
     async function startCamera() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        statusBox.textContent = "Camera not supported. Using fallback image.";
+        statusText.textContent = "Camera unsupported. Using fallback image.";
+        scanIndicator.style.display = "none";
         fallbackImage.style.display = "block";
         cameraFeed.style.display = "none";
         return;
@@ -179,21 +413,34 @@
         });
 
         cameraFeed.srcObject = stream;
-        statusBox.textContent = "Camera live. Point toward the courthouse.";
+        statusText.textContent = "Camera live. Scanning for courthouse.";
       } catch (error) {
-        statusBox.textContent = "Camera unavailable. Using fallback image.";
+        statusText.textContent = "Camera unavailable. Using fallback image.";
+        scanIndicator.style.display = "none";
         fallbackImage.style.display = "block";
         cameraFeed.style.display = "none";
       }
     }
 
+    // TEMPORARY DEMO RECOGNITION:
+    // This simulates successful landmark detection after a short delay.
+    // Later, replace this with real image/building recognition logic.
+    window.addEventListener("load", function () {
+      startCamera();
+
+
+    });
+
+    // Keyboard shortcuts
     document.addEventListener("keydown", function (event) {
+      if (event.key === "r" || event.key === "R") {
+        simulateRecognition();
+      }
+
       if (event.key === "d" || event.key === "D") {
         openExperience();
       }
     });
-
-    startCamera();
   </script>
 </body>
 </html>
