@@ -54,12 +54,34 @@
       display: none;
       z-index: 2;
     }
+    .tap-start {
+      position: fixed;
+      inset: 0;
+      background: black;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      cursor: pointer;
+      color: white;
+      font-family: Georgia, serif;
+      letter-spacing: 0.12em;
+    }
+    .tap-start p { font-size: 1.1rem; opacity: 0.7; margin: 0; }
+    .tap-start .tap-icon { font-size: 2.5rem; margin-bottom: 14px; animation: tapPulse 1.8s ease-in-out infinite; }
+    @keyframes tapPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.92)} }
   </style>
 </head>
 
 <body>
 
-  <video id="videoPlayer" autoplay muted playsinline>
+  <div class="tap-start" id="tapStart" onclick="startVideo()">
+    <div class="tap-icon">▶</div>
+    <p>Tap to begin</p>
+  </div>
+
+  <video id="videoPlayer" playsinline>
     <source src="media/courthouse.mp4" type="video/mp4">
   </video>
 
@@ -86,6 +108,11 @@
         button.style.display = "block";
       }
     });
+
+    function startVideo() {
+      document.getElementById("tapStart").style.display = "none";
+      video.play();
+    }
 
     function goToExhibit() {
       window.location.href = "exhibit.html";
