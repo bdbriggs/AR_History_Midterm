@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html>g.git
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -17,12 +17,9 @@
       --bolt-dark: #6f543a;
       --bolt-light: #b9966d;
       --success: #2f6b3b;
-      --warning: #8a5a3b;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -37,14 +34,38 @@
       padding: 24px;
     }
 
+    .back-btn {
+      position: fixed;
+      top: 16px; left: 16px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(246, 234, 215, 0.88);
+      border: 1px solid rgba(138, 90, 59, 0.3);
+      color: var(--text-main);
+      font-family: Georgia, serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-decoration: none;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 12px rgba(93, 63, 36, 0.12);
+      transition: background 0.2s, transform 0.2s;
+    }
+    .back-btn:hover { background: rgba(246, 234, 215, 1); transform: translateY(-1px); }
+
     .app-shell {
       width: min(100%, 1100px);
       display: grid;
       gap: 24px;
       grid-template-columns: 1.1fr 0.9fr;
       align-items: start;
+      padding-top: 20px;
     }
 
+    /* ── Museum card ──────────────────────────────────── */
     .museum-card {
       position: relative;
       background:
@@ -56,32 +77,48 @@
       padding: 30px;
       min-height: 520px;
       overflow: hidden;
-      transition: opacity 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+      transition: opacity 0.35s ease, box-shadow 0.4s ease;
+      animation: cardEntrance 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
-    .museum-card.is-locked {
-      opacity: 0.45;
-      transform: scale(0.985);
-      filter: saturate(0.7);
+    @keyframes cardEntrance {
+      from { opacity: 0; transform: translateY(28px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .museum-card.is-unlocked {
       box-shadow: 0 18px 36px var(--shadow), 0 0 0 4px rgba(47, 107, 59, 0.12);
+      animation: cardEntrance 0.7s cubic-bezier(0.22, 1, 0.36, 1) both,
+                 cardFloat 5s ease-in-out 0.8s infinite;
     }
 
-    .museum-card::before,
-    .museum-card::after {
+    @keyframes cardFloat {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-6px); }
+    }
+
+    .shimmer-layer {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.38) 50%, transparent 80%);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+    }
+    .shimmer-layer.run { animation: shimmerSweep 0.8s ease-out both; }
+
+    @keyframes shimmerSweep {
+      from { opacity: 1; transform: translateX(-100%); }
+      to   { opacity: 0; transform: translateX(100%); }
+    }
+
+    .museum-card::before {
       content: "";
       position: absolute;
       inset: 10px;
       border: 2px solid var(--border-mid);
       pointer-events: none;
-    }
-
-    .museum-card::after {
-      inset: 16px;
-      border-width: 1px;
-      opacity: 0.8;
+      border-radius: 4px;
     }
 
     .corner {
@@ -91,8 +128,9 @@
       color: rgba(156, 112, 77, 0.65);
       pointer-events: none;
       user-select: none;
+      transition: color 0.5s;
     }
-
+    .museum-card.is-unlocked .corner { color: rgba(47, 107, 59, 0.35); }
     .corner.tl { top: 10px; left: 16px; }
     .corner.tr { top: 10px; right: 16px; transform: scaleX(-1); }
     .corner.bl { bottom: 6px; left: 16px; transform: scaleY(-1); }
@@ -100,26 +138,24 @@
 
     .bolt {
       position: absolute;
-      width: 24px;
-      height: 24px;
+      width: 24px; height: 24px;
       border-radius: 50%;
       background: radial-gradient(circle at 35% 35%, var(--bolt-light), var(--bolt-dark));
       border: 2px solid rgba(70, 47, 30, 0.5);
       box-shadow: inset 0 1px 2px rgba(255,255,255,0.2), 0 3px 4px rgba(0,0,0,0.15);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 2;
     }
-
     .bolt::after {
       content: "";
       position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 2px;
-      height: 10px;
+      top: 50%; left: 50%;
+      width: 2px; height: 10px;
       background: rgba(72, 52, 36, 0.8);
       transform: translate(-50%, -50%) rotate(18deg);
       border-radius: 2px;
     }
-
+    .museum-card.is-unlocked .bolt { transform: rotate(45deg); }
     .bolt.tl { top: 12px; left: 12px; }
     .bolt.tr { top: 12px; right: 12px; }
 
@@ -135,7 +171,6 @@
       padding: 40px 26px 10px;
       cursor: pointer;
     }
-
     .card-inner:focus-visible {
       outline: 3px solid rgba(109, 63, 42, 0.35);
       outline-offset: 8px;
@@ -150,7 +185,9 @@
       margin: 0;
       max-width: 9ch;
       text-wrap: balance;
+      transition: font-size 0.35s ease;
     }
+    .museum-card.is-expanded .title { font-size: clamp(1.6rem, 3vw, 2.8rem); }
 
     .divider {
       width: min(100%, 560px);
@@ -161,27 +198,50 @@
       margin: 30px 0 22px;
       color: var(--text-soft);
     }
-
-    .divider::before,
-    .divider::after {
+    .divider::before, .divider::after {
       content: "";
       height: 2px;
       flex: 1;
       background: linear-gradient(90deg, transparent, var(--text-soft), transparent);
     }
+    .divider span { font-size: 1.6rem; transform: translateY(-1px); }
 
-    .divider span {
-      font-size: 1.6rem;
-      transform: translateY(-1px);
+    .tap-hint {
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+      opacity: 0.7;
+      margin-top: -14px;
+      margin-bottom: 10px;
+      animation: hintPulse 2.5s ease-in-out 1.5s infinite;
     }
+    @keyframes hintPulse {
+      0%, 100% { opacity: 0.7; }
+      50%       { opacity: 0.3; }
+    }
+    .museum-card.is-expanded .tap-hint { display: none; }
 
     .year {
       font-size: clamp(3.2rem, 6vw, 5.5rem);
       font-weight: 700;
       margin: 0 0 10px;
       line-height: 1;
-      transition: transform 0.25s ease, opacity 0.25s ease;
+      transition: transform 0.3s ease, opacity 0.3s ease, font-size 0.35s ease;
     }
+    .museum-card.is-expanded .year {
+      transform: scale(0.92);
+      opacity: 0.85;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .history-reveal-wrapper {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .history-reveal-wrapper.open { grid-template-rows: 1fr; }
+    .history-reveal-inner { overflow: hidden; }
 
     .history-reveal {
       max-width: 560px;
@@ -191,37 +251,14 @@
       background: rgba(255, 250, 244, 0.7);
       border: 1px solid rgba(138, 90, 59, 0.2);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
-      animation: fadeSlideUp 0.28s ease;
+      text-align: left;
     }
+    .history-title { margin: 0 0 10px; font-size: 1.2rem; color: var(--text-main); }
+    .history-text { margin: 0; font-size: 0.95rem; line-height: 1.65; color: #5f4332; }
+    .history-text + .history-text { margin-top: 10px; }
 
-    .history-title {
-      margin: 0 0 10px;
-      font-size: 1.45rem;
-      color: var(--text-main);
-    }
-
-    .history-text {
-      margin: 0;
-      font-size: 1rem;
-      line-height: 1.65;
-      color: #5f4332;
-    }
-
-    .museum-card.is-expanded .year {
-      transform: scale(0.95);
-      opacity: 0.9;
-    }
-
-    @keyframes fadeSlideUp {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+    /* ── Right panel ──────────────────────────────────── */
+    .info-panel { display: grid; gap: 16px; }
 
     .panel {
       background: rgba(255,255,255,0.45);
@@ -232,11 +269,6 @@
       backdrop-filter: blur(2px);
     }
 
-    .info-panel {
-      display: grid;
-      gap: 16px;
-    }
-
     .eyebrow {
       margin: 0;
       font-size: 0.8rem;
@@ -244,277 +276,452 @@
       text-transform: uppercase;
       color: var(--text-soft);
     }
+    .panel h2 { margin: 4px 0 16px; font-size: 1.4rem; line-height: 1.2; }
 
-    .panel h2 {
-      margin: 4px 0 10px;
-      font-size: 1.6rem;
-      line-height: 1.2;
+    /* Timeline */
+    .timeline {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 18px; top: 10px; bottom: 10px;
+      width: 2px;
+      background: linear-gradient(180deg, var(--border-dark), var(--border-mid), transparent);
     }
 
-    .panel p {
-      margin: 0;
-      font-size: 1rem;
-      line-height: 1.6;
-      color: #5f4332;
+    .tl-item {
+      display: flex;
+      gap: 16px;
+      padding: 10px 8px;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: background 0.2s;
+      position: relative;
     }
+    .tl-item:hover { background: rgba(255,255,255,0.5); }
+    .tl-item.active { background: rgba(255,255,255,0.65); }
 
-    .meta-grid {
+    .tl-dot {
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--plaque-bg-1);
+      border: 2px solid var(--border-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      z-index: 1;
+      box-shadow: 0 2px 6px var(--shadow);
+      transition: background 0.3s, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .tl-item.active .tl-dot { background: var(--border-dark); transform: scale(1.15); }
+
+    .tl-content { flex: 1; }
+    .tl-year { font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-soft); margin: 0; }
+    .tl-title { font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 2px 0 4px; }
+
+    .tl-body-wrapper {
       display: grid;
-      gap: 12px;
-      grid-template-columns: 1fr 1fr;
-      margin-top: 4px;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
+    .tl-item.active .tl-body-wrapper { grid-template-rows: 1fr; }
+    .tl-body-inner { overflow: hidden; }
+    .tl-body { font-size: 0.88rem; line-height: 1.6; color: #5f4332; margin: 0; padding: 4px 0; }
 
+    .tl-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+    }
+    .tl-btn {
+      appearance: none;
+      border: 1px solid rgba(138, 90, 59, 0.3);
+      background: rgba(255,255,255,0.5);
+      color: var(--text-main);
+      font-family: Georgia, serif;
+      font-size: 0.85rem;
+      padding: 7px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .tl-btn:hover:not(:disabled) { background: rgba(255,255,255,0.85); transform: translateY(-1px); }
+    .tl-btn:disabled { opacity: 0.3; cursor: default; }
+    .tl-counter { font-size: 0.82rem; color: var(--text-soft); }
+
+    .meta-grid { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-top: 4px; }
     .meta-item {
-      padding: 14px;
-      border-radius: 14px;
+      padding: 12px;
+      border-radius: 12px;
       background: rgba(255,255,255,0.5);
       border: 1px solid rgba(138, 90, 59, 0.18);
     }
+    .meta-label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-soft); margin-bottom: 4px; }
+    .meta-value { font-size: 0.95rem; line-height: 1.4; color: var(--text-main); }
 
-    .meta-label {
-      display: block;
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--text-soft);
-      margin-bottom: 6px;
-    }
+    .info-panel > * { animation: cardEntrance 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .info-panel > *:nth-child(1) { animation-delay: 0.1s; }
+    .info-panel > *:nth-child(2) { animation-delay: 0.22s; }
+    .info-panel > *:nth-child(3) { animation-delay: 0.34s; }
 
-    .meta-value {
-      font-size: 1rem;
-      line-height: 1.45;
+    /* ── Audio controls ───────────────────────────────── */
+    .audio-btn {
+      appearance: none;
+      border: 1px solid rgba(138, 90, 59, 0.35);
+      background: rgba(255,255,255,0.55);
       color: var(--text-main);
-      word-break: break-word;
+      font-family: Georgia, serif;
+      font-size: 0.82rem;
+      padding: 6px 13px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      margin-top: 12px;
+      z-index: 2;
+      position: relative;
+    }
+    .audio-btn:hover { background: rgba(255,255,255,0.85); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(93,63,36,0.12); }
+    .audio-btn.speaking {
+      background: var(--border-dark);
+      color: #fffaf4;
+      border-color: var(--border-dark);
+      animation: speakPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes speakPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(138,90,59,0.4); }
+      50%       { box-shadow: 0 0 0 7px rgba(138,90,59,0); }
     }
 
-    .cta-row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 4px;
-    }
-
-    .button {
+    .tl-audio-btn {
       appearance: none;
       border: none;
+      background: none;
+      color: var(--text-soft);
+      font-size: 1rem;
       cursor: pointer;
-      border-radius: 999px;
-      padding: 12px 18px;
-      font: inherit;
-      font-weight: 600;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+      padding: 2px 4px;
+      border-radius: 6px;
+      transition: color 0.2s, transform 0.15s;
+      line-height: 1;
     }
+    .tl-audio-btn:hover { color: var(--text-main); transform: scale(1.15); }
+    .tl-audio-btn.speaking { color: var(--border-dark); animation: speakPulse 1.4s ease-in-out infinite; }
 
-    .button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 18px rgba(93, 63, 36, 0.16);
-    }
-
-    .button.primary {
-      background: var(--text-main);
-      color: #fffaf4;
-    }
-
-    .button.secondary {
-      background: transparent;
-      color: var(--text-main);
-      border: 1px solid rgba(109, 63, 42, 0.35);
-    }
-
-    .proximity-box {
-      margin-top: 14px;
-      padding: 14px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.52);
-      border: 1px solid rgba(138, 90, 59, 0.18);
-    }
-
-    .proximity-box p {
-      margin: 0;
-    }
-
-    .distance-readout {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-top: 6px;
-    }
-
-    .hint {
-      font-size: 0.92rem;
-      color: var(--text-soft);
-      margin-top: 6px;
-    }
-
-    .status {
-      min-height: 1.5em;
-      font-size: 0.95rem;
-      color: var(--text-soft);
-      margin-top: 10px;
-    }
-
-    .status.good {
-      color: var(--success);
-      font-weight: 600;
-    }
-
-    .status.warn {
-      color: var(--warning);
-      font-weight: 600;
+    .tl-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     @media (max-width: 860px) {
-      .app-shell {
-        grid-template-columns: 1fr;
-      }
-
-      .museum-card {
-        min-height: 420px;
-      }
+      .app-shell { grid-template-columns: 1fr; }
+      .museum-card { min-height: 420px; }
     }
-
     @media (max-width: 540px) {
-      body {
-        padding: 14px;
-      }
-
-      .museum-card {
-        padding: 18px;
-      }
-
-      .card-inner {
-        padding: 38px 12px 6px;
-      }
-
-      .meta-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .corner {
-        font-size: 56px;
-      }
+      body { padding: 14px; }
+      .museum-card { padding: 18px; }
+      .card-inner { padding: 38px 12px 6px; }
+      .meta-grid { grid-template-columns: 1fr; }
+      .corner { font-size: 56px; }
     }
   </style>
 </head>
 <body>
+
+  <a class="back-btn" href="video.html">← Back</a>
+
   <main class="app-shell">
-    <section
-      class="museum-card is-locked"
-      id="historyCard"
-      data-lat="32.5456"
-      data-lng="-94.3562"
-      data-site-name="Harrison County Historical Museum"
-      data-year="1901"
-    >
+
+    <section class="museum-card" id="historyCard"
+      data-lat="32.5456" data-lng="-94.3562"
+      data-site-name="Harrison County Historical Museum" data-year="1901">
+
+      <div class="shimmer-layer" id="shimmerLayer"></div>
       <div class="bolt tl"></div>
       <div class="bolt tr"></div>
-
       <div class="corner tl">❦</div>
       <div class="corner tr">❦</div>
       <div class="corner bl">❦</div>
       <div class="corner br">❦</div>
 
-      <div class="card-inner" id="cardInner" role="button" tabindex="0" aria-expanded="false" aria-controls="historyReveal">
+      <div class="card-inner" id="cardInner" role="button" tabindex="0"
+           aria-expanded="false" aria-controls="historyReveal">
         <h1 class="title">Harrison County Historical Museum</h1>
         <div class="divider" aria-hidden="true"><span>✦</span></div>
+        <p class="tap-hint">Tap to reveal history</p>
         <p class="year">1901</p>
 
-        <div class="history-reveal" id="historyReveal" hidden>
-          <h2 class="history-title">1901 Courthouse History</h2>
-          <p class="history-text">
-            The historic Harrison County Courthouse in Marshall, Texas, was designed by architect J. Riely Gordon and completed in 1901. This Beaux Arts / Neo-Classical landmark is known for its pink granite base, central dome, and the statue of Lady Justice that crowns the structure. It stands as the county’s fourth courthouse and is listed on the National Register of Historic Places.
-          </p>
-          <p class="history-text" style="margin-top:10px;">
-            After a new courthouse was built in 1964, the 1901 building was later restored (2009–2010) and transformed into the Harrison County Historical Museum. Today, it preserves local history while still housing some government offices, blending past and present in one iconic structure.
-          </p>
+        <div class="history-reveal-wrapper" id="revealWrapper">
+          <div class="history-reveal-inner">
+            <div class="history-reveal" id="historyReveal">
+              <h2 class="history-title">1901 Courthouse History</h2>
+              <p class="history-text">Designed by architect J. Riely Gordon and completed in 1901, this Beaux Arts / Neo-Classical landmark features a pink granite base, central dome, and the statue of Lady Justice. It is listed on the National Register of Historic Places.</p>
+              <p class="history-text">After a new courthouse was built in 1964, the 1901 building was restored (2009–2010) and transformed into the Harrison County Historical Museum — preserving local history while still housing some government offices.</p>
+              <button class="audio-btn" id="cardAudioBtn" onclick="toggleCardAudio(event)" aria-label="Read aloud">🔊 Read aloud</button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
     <aside class="info-panel">
-      <section class="panel">
-        <p class="eyebrow">PastPort Experience</p>
-        <h2>Interactive Historic Site Interpretation</h2>
-        <p>
-          PastPort transforms the Harrison County Historical Museum into an interactive portal to local history. When the courthouse is recognized, a museum-style card appears in context, inviting the visitor to explore. From there, the experience expands into historical media and interpretive information, blending archival storytelling with the physical site itself.. This demo uses your phone's GPS location to reveal hidden stories about the Harrison County Historical Museum in Marshall, Texas when you get close enough. Try it out and see how history can come alive on your device!
-        </p>
-      </section>
 
       <section class="panel">
-        <p class="eyebrow">About PastPort</p>
-        <div class="meta-grid">
-          <div class="meta-item">
-<div class="meta-item">
-  <span class="meta-label">Site Name</span>
-  <span class="meta-value" id="siteName">Harrison County Historical Museum</span>
-</div>
+        <p class="eyebrow">PastPort • Timeline</p>
+        <h2>Through the Years</h2>
 
-<div class="meta-item">
-  <span class="meta-label">Built</span>
-  <span class="meta-value" id="siteYear">1901</span>
-</div>
-
-<div class="meta-item">
-  <span class="meta-label">Architect</span>
-  <span class="meta-value">J. Riely Gordon</span>
-</div>
-
-<div class="meta-item">
-  <span class="meta-label">Style</span>
-  <span class="meta-value">Beaux Arts / Neo-Classical</span>
-</div>
+        <div class="timeline" id="timeline">
+          <div class="tl-item" data-index="0">
+            <div class="tl-dot">🏛️</div>
+            <div class="tl-content">
+              <p class="tl-year">1901</p>
+              <div class="tl-title-row"><p class="tl-title" style="margin:2px 0 4px">Courthouse Opens</p><button class="tl-audio-btn" data-tl-index="0" onclick="toggleTlAudio(event,0)" title="Read aloud">🔊</button></div>
+              <div class="tl-body-wrapper"><div class="tl-body-inner">
+                <p class="tl-body">Designed by J. Riely Gordon in Beaux Arts style, the courthouse opens with pink granite facades and a gilded dome. Lady Justice watches over Marshall from above.</p>
+              </div></div>
+            </div>
           </div>
+
+          <div class="tl-item" data-index="1">
+            <div class="tl-dot">⚖️</div>
+            <div class="tl-content">
+              <p class="tl-year">1964</p>
+              <div class="tl-title-row"><p class="tl-title" style="margin:2px 0 4px">New Courthouse Built</p><button class="tl-audio-btn" data-tl-index="1" onclick="toggleTlAudio(event,1)" title="Read aloud">🔊</button></div>
+              <div class="tl-body-wrapper"><div class="tl-body-inner">
+                <p class="tl-body">County government moves to a modern facility. The 1901 landmark sits largely vacant for decades — its future uncertain, but its architecture too significant to abandon.</p>
+              </div></div>
+            </div>
+          </div>
+
+          <div class="tl-item" data-index="2">
+            <div class="tl-dot">🔧</div>
+            <div class="tl-content">
+              <p class="tl-year">2009–2010</p>
+              <div class="tl-title-row"><p class="tl-title" style="margin:2px 0 4px">Grand Restoration</p><button class="tl-audio-btn" data-tl-index="2" onclick="toggleTlAudio(event,2)" title="Read aloud">🔊</button></div>
+              <div class="tl-body-wrapper"><div class="tl-body-inner">
+                <p class="tl-body">A multi-year restoration returns the building to its former glory. Original details are preserved, the dome is reinforced, and the building is added to the National Register of Historic Places.</p>
+              </div></div>
+            </div>
+          </div>
+
+          <div class="tl-item" data-index="3">
+            <div class="tl-dot">🗂️</div>
+            <div class="tl-content">
+              <p class="tl-year">Today</p>
+              <div class="tl-title-row"><p class="tl-title" style="margin:2px 0 4px">Harrison County Historical Museum</p><button class="tl-audio-btn" data-tl-index="3" onclick="toggleTlAudio(event,3)" title="Read aloud">🔊</button></div>
+              <div class="tl-body-wrapper"><div class="tl-body-inner">
+                <p class="tl-body">Part archive, part museum, part living civic space. Visitors explore East Texas history in the same halls where justice was once served.</p>
+              </div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-nav">
+          <button class="tl-btn" id="prevBtn" onclick="stepTimeline(-1)" disabled>← Prev</button>
+          <span class="tl-counter" id="tlCounter">1 / 4</span>
+          <button class="tl-btn" id="nextBtn" onclick="stepTimeline(1)">Next →</button>
         </div>
       </section>
 
-      
+      <section class="panel">
+        <p class="eyebrow">About this Site</p>
+        <div class="meta-grid">
+          <div class="meta-item"><span class="meta-label">Site</span><span class="meta-value">Harrison County Historical Museum</span></div>
+          <div class="meta-item"><span class="meta-label">Built</span><span class="meta-value">1901</span></div>
+          <div class="meta-item"><span class="meta-label">Architect</span><span class="meta-value">J. Riely Gordon</span></div>
+          <div class="meta-item"><span class="meta-label">Style</span><span class="meta-value">Beaux Arts / Neo-Classical</span></div>
+        </div>
+      </section>
 
-  <<script>
+      <section class="panel">
+        <p class="eyebrow">PastPort • Location</p>
+        <p style="margin:6px 0 0; font-size:0.95rem; color:#5f4332;" id="gpsStatus">Checking your location…</p>
+        <p style="margin:6px 0 0; font-size:1.1rem; font-weight:700; color:var(--text-main);" id="gpsDistance"></p>
+      </section>
+
+    </aside>
+  </main>
+
+  <script>
   (function () {
-    const card = document.getElementById("historyCard");
-    const cardInner = document.getElementById("cardInner");
-    const historyReveal = document.getElementById("historyReveal");
-    const siteNameEl = document.getElementById("siteName");
-    const siteYearEl = document.getElementById("siteYear");
 
-    const siteName = card.dataset.siteName;
-    const siteYear = card.dataset.year;
+    /* ── Web Speech API ───────────────────────────────── */
+    var synth = window.speechSynthesis;
+    var cardSpeaking = false;
+    var tlSpeaking = -1;
 
-    if (siteNameEl) {
-      siteNameEl.textContent = siteName;
+    var cardScript = "Designed by architect J. Riely Gordon and completed in 1901, " +
+      "this Beaux Arts, Neo-Classical landmark features a pink granite base, central dome, " +
+      "and the statue of Lady Justice. It is listed on the National Register of Historic Places. " +
+      "After a new courthouse was built in 1964, the building was restored between 2009 and 2010, " +
+      "and transformed into the Harrison County Historical Museum.";
+
+    var tlScripts = [
+      "1901. Courthouse Opens. Designed by J. Riely Gordon in Beaux Arts style, " +
+      "the courthouse opens with pink granite facades and a gilded dome. " +
+      "Lady Justice watches over Marshall from above.",
+
+      "1964. New Courthouse Built. County government moves to a modern facility. " +
+      "The 1901 landmark sits largely vacant for decades — its future uncertain, " +
+      "but its architecture too significant to abandon.",
+
+      "2009 to 2010. Grand Restoration. A multi-year restoration returns the building " +
+      "to its former glory. Original details are preserved, the dome is reinforced, " +
+      "and the building is added to the National Register of Historic Places.",
+
+      "Today. Harrison County Historical Museum. Part archive, part museum, " +
+      "part living civic space. Visitors explore East Texas history in the same halls " +
+      "where justice was once served."
+    ];
+
+    function speak(text, onEnd) {
+      synth.cancel();
+      var utt = new SpeechSynthesisUtterance(text);
+      utt.rate = 0.92;
+      utt.pitch = 1.0;
+      utt.lang = "en-US";
+      utt.onend = onEnd || null;
+      synth.speak(utt);
     }
 
-    if (siteYearEl) {
-      siteYearEl.textContent = siteYear;
+    function stopAll() {
+      synth.cancel();
+      setCardSpeaking(false);
+      setTlSpeaking(-1);
     }
 
-    function toggleHistoryReveal() {
-      const isHidden = historyReveal.hasAttribute("hidden");
-
-      if (isHidden) {
-        historyReveal.removeAttribute("hidden");
-        card.classList.remove("is-locked");
-        card.classList.add("is-unlocked", "is-expanded");
-        cardInner.setAttribute("aria-expanded", "true");
-      } else {
-        historyReveal.setAttribute("hidden", "hidden");
-        card.classList.remove("is-expanded");
-        cardInner.setAttribute("aria-expanded", "false");
-      }
+    function setCardSpeaking(on) {
+      cardSpeaking = on;
+      var btn = document.getElementById("cardAudioBtn");
+      if (!btn) return;
+      btn.classList.toggle("speaking", on);
+      btn.textContent = on ? "⏹ Stop" : "🔊 Read aloud";
     }
 
-    card.classList.remove("is-locked");
+    function setTlSpeaking(idx) {
+      document.querySelectorAll(".tl-audio-btn").forEach(function(b, i) {
+        b.classList.toggle("speaking", i === idx);
+        b.textContent = (i === idx) ? "⏹" : "🔊";
+      });
+      tlSpeaking = idx;
+    }
+
+    window.toggleCardAudio = function(e) {
+      e.stopPropagation();
+      if (cardSpeaking) { stopAll(); return; }
+      stopAll();
+      setCardSpeaking(true);
+      speak(cardScript, function() { setCardSpeaking(false); });
+    };
+
+    window.toggleTlAudio = function(e, idx) {
+      e.stopPropagation();
+      if (tlSpeaking === idx) { stopAll(); return; }
+      stopAll();
+      setTlSpeaking(idx);
+      speak(tlScripts[idx], function() { setTlSpeaking(-1); });
+    };
+
+    /* ── Card reveal ──────────────────────────────────── */
+    var card      = document.getElementById("historyCard");
+    var cardInner = document.getElementById("cardInner");
+    var wrapper   = document.getElementById("revealWrapper");
+    var shimmer   = document.getElementById("shimmerLayer");
+    var expanded  = false;
+
     card.classList.add("is-unlocked");
 
-    cardInner.addEventListener("click", function () {
-      toggleHistoryReveal();
+    function triggerShimmer() {
+      shimmer.classList.remove("run");
+      void shimmer.offsetWidth;
+      shimmer.classList.add("run");
+    }
+    triggerShimmer();
+
+    function toggleReveal() {
+      expanded = !expanded;
+      wrapper.classList.toggle("open", expanded);
+      card.classList.toggle("is-expanded", expanded);
+      cardInner.setAttribute("aria-expanded", String(expanded));
+      if (expanded) triggerShimmer();
+      if (!expanded) { setCardSpeaking(false); synth.cancel(); }
+    }
+
+    cardInner.addEventListener("click", toggleReveal);
+    cardInner.addEventListener("keydown", function(e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleReveal(); }
     });
 
-    cardInner.addEventListener("keydown", function (event) {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        toggleHistoryReveal();
-      }
+    /* ── Timeline ─────────────────────────────────────── */
+    var items   = Array.from(document.querySelectorAll(".tl-item"));
+    var prevBtn = document.getElementById("prevBtn");
+    var nextBtn = document.getElementById("nextBtn");
+    var counter = document.getElementById("tlCounter");
+    var current = 0;
+
+    function activateItem(idx) {
+      items.forEach(function(el, i) { el.classList.toggle("active", i === idx); });
+      current = idx;
+      counter.textContent = (idx + 1) + " / " + items.length;
+      prevBtn.disabled = idx === 0;
+      nextBtn.disabled = idx === items.length - 1;
+    }
+
+    items.forEach(function(el, i) {
+      el.addEventListener("click", function() { activateItem(i); });
     });
+
+    window.stepTimeline = function(dir) {
+      var next = Math.min(Math.max(current + dir, 0), items.length - 1);
+      activateItem(next);
+      items[next].scrollIntoView({ behavior: "smooth", block: "nearest" });
+    };
+
+    activateItem(0);
+
+    /* ── GPS ──────────────────────────────────────────── */
+    var SITE_LAT = 32.5456, SITE_LNG = -94.3562;
+    var statusEl   = document.getElementById("gpsStatus");
+    var distanceEl = document.getElementById("gpsDistance");
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      var R = 3958.8;
+      var dLat = (lat2 - lat1) * Math.PI / 180;
+      var dLon = (lon2 - lon1) * Math.PI / 180;
+      var a = Math.sin(dLat/2) * Math.sin(dLat/2)
+            + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180)
+            * Math.sin(dLon/2) * Math.sin(dLon/2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        var miles = haversine(pos.coords.latitude, pos.coords.longitude, SITE_LAT, SITE_LNG);
+        if (miles < 0.1) {
+          statusEl.textContent = "📍 You are at the museum!";
+          distanceEl.textContent = "";
+        } else {
+          statusEl.textContent = "📍 You are approximately:";
+          distanceEl.textContent = miles.toFixed(1) + " miles from this site";
+        }
+      }, function() {
+        statusEl.textContent = "Location unavailable — GPS permission needed.";
+      });
+    } else {
+      statusEl.textContent = "GPS not supported on this device.";
+    }
+
   })();
-</script>
+  </script>
+
+</body>
+</html>
